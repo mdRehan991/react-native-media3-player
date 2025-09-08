@@ -1,5 +1,5 @@
 apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
+apply plugin: "org.jetbrains.kotlin.android"
 
 android {
     namespace "com.rnmedia3playerdemo"
@@ -9,10 +9,29 @@ android {
         minSdkVersion 24
         targetSdkVersion 34
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
-    implementation "com.facebook.react:react-native:+"   // Required for RN
-    implementation "androidx.media3:media3-exoplayer:1.4.1" // Example Media3 dependency
+    // Required for React Native bridge
+    implementation "com.facebook.react:react-native:+"
+
+    // Kotlin standard lib
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.0"
+
+    // ✅ Media3 dependencies
+    implementation "androidx.media3:media3-exoplayer:1.4.1"
+    implementation "androidx.media3:media3-ui:1.4.1"
+    implementation "androidx.media3:media3-common:1.4.1"
+
+    // Useful Android extensions
+    implementation "androidx.core:core-ktx:1.13.1"
 }
