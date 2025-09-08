@@ -1,0 +1,7 @@
+node_modules
+android/build
+ios/build
+example
+.git
+.gitignore
+README.md

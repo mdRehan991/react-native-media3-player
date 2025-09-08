@@ -70,3 +70,5 @@ example/.idea/
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+*.tgz
