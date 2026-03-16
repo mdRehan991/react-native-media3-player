@@ -1,3 +1,9 @@
 {
-  "extends": "@react-native/typescript-config/tsconfig.json"
+  "extends": "./example/node_modules/@react-native/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "paths": {
+      "react-native": ["./example/node_modules/react-native"]
+    }
+  }
 }
