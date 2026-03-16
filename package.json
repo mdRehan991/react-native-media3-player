@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "React Native Media3 Player component for Android (ExoPlayer 3 integration).",
   "main": "index.js",
+  "react-native": "index.js",
   "types": "index.d.ts",
   "keywords": [
     "react-native",
@@ -31,5 +32,13 @@
     "src",
     "index.js",
     "index.d.ts"
-  ]
+  ],
+  "codegenConfig": {
+    "name": "RNMedia3PlayerSpec",
+    "type": "components",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.rnmedia3playerdemo"
+    }
+  }
 }

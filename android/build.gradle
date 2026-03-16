@@ -1,37 +1,55 @@
+// Apply the Android library plugin
 apply plugin: "com.android.library"
+// Apply the Kotlin Android plugin for Kotlin language support
 apply plugin: "org.jetbrains.kotlin.android"
+// Apply the React Native plugin to enable React Native integration
+apply plugin: "com.facebook.react"
 
 android {
+    // Set the namespace for the generated R class and manifest
     namespace "com.rnmedia3playerdemo"
+
+    // Compile SDK version to build against
     compileSdkVersion 35
 
     defaultConfig {
+        // Minimum SDK version supported by the library
         minSdkVersion 24
+        // Target SDK version for compatibility and behaviors
         targetSdkVersion 34
     }
 
     compileOptions {
+        // Specify Java source and target compatibility
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
+        // Set the Kotlin JVM target version
         jvmTarget = "17"
+    }
+
+    sourceSets {
+        main {
+            // Include codegen outputs (for TurboModules, Fabric, etc.) in the main sources
+            java.srcDirs += "${buildDir}/generated/source/codegen/java"
+        }
     }
 }
 
 dependencies {
-    // Required for React Native bridge
-    implementation "com.facebook.react:react-native:+"
+    // Dependency for React Native bridge (provided by the app, NOT bundled in aar)
+    compileOnly "com.facebook.react:react-android"
 
-    // Kotlin standard lib
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.0"
+    // Kotlin standard library dependency
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 
-    // ✅ Media3 dependencies
+    // AndroidX Media3 ExoPlayer, UI components, and Common classes
     implementation "androidx.media3:media3-exoplayer:1.4.1"
     implementation "androidx.media3:media3-ui:1.4.1"
     implementation "androidx.media3:media3-common:1.4.1"
 
-    // Useful Android extensions
+    // Android core utilities and extensions (KTX)
     implementation "androidx.core:core-ktx:1.13.1"
 }
