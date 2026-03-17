@@ -8,8 +8,24 @@ const App = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(AUTO_PLAY);
 
-  const videoSource = {
-    uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  // Sample URLs for testing
+
+  // const source = {
+  //   uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  // };
+
+  // const source = {
+  //   uri: 'https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd',
+  //   drm: {
+  //     licenseUrl: 'https://proxy.uat.widevine.com/proxy?provider=widevine_test',
+  //   },
+  // };
+
+  const source = {
+    uri: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
+    drm: {
+      licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth',
+    },
   };
 
   return (
@@ -18,7 +34,7 @@ const App = () => {
         mute={isMuted}
         autoplay={false}
         play={isPlaying}
-        source={videoSource}
+        source={source}
         style={styles.player}
         onEnd={() => Alert.alert('Video ended')}
         onReady={() => console.log('Player is ready')}
