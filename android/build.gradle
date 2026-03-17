@@ -5,6 +5,11 @@ apply plugin: "org.jetbrains.kotlin.android"
 // Apply the React Native plugin to enable React Native integration
 apply plugin: "com.facebook.react"
 
+// Use app-defined version if available, otherwise fallback
+def media3Version = rootProject.ext.has("media3Version")
+        ? rootProject.ext.media3Version
+        : "1.4.1"
+
 android {
     // Set the namespace for the generated R class and manifest
     namespace "com.rnmedia3playerdemo"
@@ -46,9 +51,17 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
 
     // AndroidX Media3 ExoPlayer, UI components, and Common classes
-    implementation "androidx.media3:media3-exoplayer:1.4.1"
-    implementation "androidx.media3:media3-ui:1.4.1"
-    implementation "androidx.media3:media3-common:1.4.1"
+    implementation "androidx.media3:media3-exoplayer:$media3Version"
+    implementation "androidx.media3:media3-ui:$media3Version"
+    implementation "androidx.media3:media3-common:$media3Version"
+
+    // streaming formats
+    implementation "androidx.media3:media3-exoplayer-dash:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-hls:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-smoothstreaming:$media3Version"
+
+    // OkHttp data source for Media3 (DRM/auth/advanced networking)
+    implementation "androidx.media3:media3-datasource-okhttp:$media3Version"
 
     // Android core utilities and extensions (KTX)
     implementation "androidx.core:core-ktx:1.13.1"

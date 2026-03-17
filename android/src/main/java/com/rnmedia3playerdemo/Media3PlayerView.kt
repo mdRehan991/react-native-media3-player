@@ -14,6 +14,7 @@ import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
+import androidx.media3.common.C
 
 /**
  * Custom view that wraps ExoPlayer and PlayerView, integrating with React Native.
@@ -83,19 +84,47 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
     }
 
     /**
-     * Sets the video source from a URI string and prepares the player.
-     * @param uriString Video source URI as a string
+     * Sets the video source (with optional DRM support) and prepares the player.
+     * Called from the ViewManager when the JS "source" prop changes.
+     *
+     * @param uriString The URI of the media source to play.
+     * @param licenseUrl If provided, enables DRM playback with this license URL.
+     * @param headers Optional headers to add to DRM license requests.
      */
-    fun setSource(uriString: String?) {
+    fun setSource(
+        uriString: String?,
+        licenseUrl: String?,
+        headers: Map<String, String>?
+    ) {
+        // Return early if no valid URI is provided
         if (uriString.isNullOrEmpty()) return
         sourceUri = uriString
 
-        // Ensure player is initialized
+        // Ensure the ExoPlayer instance is initialized before use
         initializePlayer()
 
-        // Set and prepare the media item for playback
-        val item = MediaItem.fromUri(Uri.parse(uriString))
-        exoPlayer?.setMediaItem(item)
+        val uri = Uri.parse(uriString)
+        // Build the MediaItem, adding DRM configuration if a license URL is given
+        val mediaItem =
+            if (!licenseUrl.isNullOrEmpty()) {
+                val drmBuilder = MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
+                    .setLicenseUri(licenseUrl) // set the license URL
+                    .setMultiSession(true) // allow multiple DRM sessions if the stream requires them
+
+                headers?.let {
+                    drmBuilder.setLicenseRequestHeaders(it)
+                }
+
+                MediaItem.Builder()
+                    .setUri(uri)
+                    .setDrmConfiguration(drmBuilder.build())
+                    .build()
+            } else {
+                // No DRM: simple MediaItem from URI
+                MediaItem.fromUri(uri)
+            }
+        // Set the media item on the player and prepare for playback
+        exoPlayer?.setMediaItem(mediaItem)
         exoPlayer?.prepare()
     }
 

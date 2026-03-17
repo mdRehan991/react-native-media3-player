@@ -5,6 +5,22 @@ import type {DirectEventHandler} from 'react-native/Libraries/Types/CodegenTypes
 // Import codegenNativeComponent to register the native UI component for use in React Native
 import codegenNativeComponent from 'react-native/Libraries/Utilities/codegenNativeComponent';
 
+type HeaderEntry = Readonly<{
+  key: string;
+  value: string;
+}>;
+
+type DRMConfig = Readonly<{
+  licenseUrl: string;
+  headers?: ReadonlyArray<HeaderEntry>;
+}>;
+// Source defines the media source for the player component.
+// - uri: The URI of the media to be played (required).
+// - drm: (Optional) DRM configuration for protected content.
+type Source = Readonly<{
+  uri: string;
+  drm?: DRMConfig;
+}>;
 // Event type emitted when the player is ready
 type OnReadyEvent = Readonly<{}>;
 // Event type emitted when playback reaches the end
@@ -17,7 +33,7 @@ type OnErrorEvent = Readonly<{
 // Props supported by the native Media3PlayerView component
 export interface NativeProps extends ViewProps {
   // Source URI for the media to play
-  source?: Readonly<{uri: string}>;
+  source?: Source;
   // Whether playback should start automatically when ready
   autoplay?: boolean;
   // Whether playback should currently be running (true = play, false = pause)
