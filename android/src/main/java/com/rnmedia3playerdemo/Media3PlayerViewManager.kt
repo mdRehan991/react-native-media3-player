@@ -45,14 +45,35 @@ class Media3PlayerViewManager :
     }
 
     /**
-     * Sets the "source" property on the Media3PlayerView.
-     * Reads the "uri" string from the passed ReadableMap and loads it into the native view.
+     * Handles the "source" prop for Media3PlayerView.
+     * Extracts the "uri", optional DRM license URL, and headers from the ReadableMap and forwards
+     * them to the view for loading the media source and DRM configuration.
      */
     @ReactProp(name = "source")
     override fun setSource(view: Media3PlayerView, source: ReadableMap?) {
         val uri = source?.getString("uri")
+        var licenseUrl: String? = null
+        var headers: Map<String, String>? = null
+        val drmMap = source?.getMap("drm")
+
+        if (drmMap != null) {
+            licenseUrl = drmMap.getString("licenseUrl")
+            val headersArray = drmMap.getArray("headers")
+            if (headersArray != null) {
+                val map = mutableMapOf<String, String>()
+                for (i in 0 until headersArray.size()) {
+                    val entry = headersArray.getMap(i)
+                    val key = entry?.getString("key")
+                    val value = entry?.getString("value")
+                    if (key != null && value != null) {
+                        map[key] = value
+                    }
+                }
+                headers = map
+            }
+        }
         if (!uri.isNullOrEmpty()) {
-            view.setSource(uri)
+            view.setSource(uri, licenseUrl, headers)
         }
     }
 
