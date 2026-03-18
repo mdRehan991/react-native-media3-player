@@ -22,7 +22,6 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.smoothstreaming.SsMediaSource
-import android.util.Log
 
 /**
  * Custom view that wraps ExoPlayer and PlayerView, integrating with React Native.
