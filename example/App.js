@@ -23,6 +23,7 @@ const App = () => {
 
   const source = {
     uri: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
+    type: 'dash', // Stream type: 'dash', 'hls', 'mp4'
     drm: {
       licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth',
     },

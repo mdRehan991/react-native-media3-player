@@ -1,6 +1,6 @@
 # 📽️ Media3Player
 
-> A lightweight, high-performance React Native video player powered by Android Media3 (ExoPlayer). Fully customizable and supports autoplay, mute, and event handling. This is **Android** only package.
+> A lightweight, high-performance React Native video player powered by Android Media3 (ExoPlayer). Fully customizable with support for autoplay, mute, event handling, and automatic stream type detection (DASH, HLS, MP4). This is an **Android** only package.
 
 ---
 
@@ -9,6 +9,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Props](#props)
+- [Stream Type Detection](#stream-type-detection)
 - [DRM Support (Widevine)](#drm-support-widevine)
 - [Events](#events)
 - [TypeScript Support](#typescript-support)
@@ -92,6 +93,7 @@ export default function App() {
         style={{width: '100%', height: 250}}
         source={{
           uri: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
+          type: 'dash',
           drm: {
             licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth',
           },
@@ -121,10 +123,11 @@ export default function App() {
 
 ### `Source` Object
 
-| Property | Type        | Required | Description                                          |
-| -------- | ----------- | -------- | ---------------------------------------------------- |
-| `uri`    | `string`    | Yes      | The URI of the media to play (MP4, DASH, HLS, etc.). |
-| `drm`    | `DRMConfig` | No       | DRM configuration for protected content.             |
+| Property | Type                         | Required | Description                                                                                                  |
+| -------- | ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
+| `uri`    | `string`                     | Yes      | The URI of the media to play (MP4, DASH, HLS, etc.).                                                         |
+| `type`   | `'dash' \| 'hls' \| 'mp4'`  | No       | Explicitly set the stream type. Defaults to `'mp4'`. If omitted, the player auto-detects the type from the URI. |
+| `drm`    | `DRMConfig`                  | No       | DRM configuration for protected content.                                                                     |
 
 ### `DRMConfig` Object
 
@@ -132,6 +135,51 @@ export default function App() {
 | ------------ | --------------------------------- | -------- | ----------------------------------------------------- |
 | `licenseUrl` | `string`                          | Yes      | The Widevine license server URL.                      |
 | `headers`    | `Array<{ key: string, value: string }>` | No       | Custom headers to include in the DRM license request. |
+
+---
+
+## Stream Type Detection
+
+The player supports **automatic stream type detection** based on the media URI. It inspects the file extension and known manifest patterns (`.mpd` for DASH, `.m3u8` for HLS) to choose the correct media source.
+
+You can also **explicitly set the stream type** using the `type` property in the `source` prop. This is useful when the URI does not contain a recognizable extension (e.g., signed URLs or token-based endpoints).
+
+### Supported Stream Types
+
+| `type` Value | Format              | Description                           |
+| ------------ | ------------------- | ------------------------------------- |
+| `'dash'`     | DASH (`.mpd`)       | Dynamic Adaptive Streaming over HTTP  |
+| `'hls'`      | HLS (`.m3u8`)       | HTTP Live Streaming                   |
+| `'mp4'`      | Progressive (`.mp4`)| Standard progressive HTTP download    |
+
+### Auto-Detection (Recommended)
+
+If the URI contains a known extension, you can omit `type` entirely:
+
+```jsx
+<Media3Player
+  source={{uri: 'https://example.com/stream/manifest.mpd'}}
+  autoplay
+  play
+/>
+```
+
+The player will automatically detect this as a DASH stream.
+
+### Explicit Type Override
+
+Use `type` when the URI does not have a recognizable extension:
+
+```jsx
+<Media3Player
+  source={{
+    uri: 'https://cdn.example.com/stream?token=abc123',
+    type: 'hls',
+  }}
+  autoplay
+  play
+/>
+```
 
 ---
 
@@ -216,12 +264,13 @@ const props: Media3PlayerProps = {
 };
 ```
 
-**With DRM:**
+**With DRM and explicit stream type:**
 
 ```ts
 const drmProps: Media3PlayerProps = {
   source: {
     uri: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
+    type: 'dash',
     drm: {
       licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth',
       headers: [
@@ -263,12 +312,36 @@ const drmProps: Media3PlayerProps = {
 />
 ```
 
+**HLS Stream:**
+
+```jsx
+<Media3Player
+  source={{
+    uri: 'https://example.com/live/stream.m3u8',
+    type: 'hls',
+  }}
+  autoplay
+  play
+/>
+```
+
+**DASH Stream (auto-detected):**
+
+```jsx
+<Media3Player
+  source={{uri: 'https://example.com/video/manifest.mpd'}}
+  autoplay
+  play
+/>
+```
+
 **Widevine DRM Stream:**
 
 ```jsx
 <Media3Player
   source={{
     uri: 'https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd',
+    type: 'dash',
     drm: {
       licenseUrl: 'https://proxy.uat.widevine.com/proxy?provider=widevine_test',
     },
@@ -284,6 +357,7 @@ const drmProps: Media3PlayerProps = {
 <Media3Player
   source={{
     uri: 'https://example.com/protected/manifest.mpd',
+    type: 'dash',
     drm: {
       licenseUrl: 'https://license.example.com/widevine',
       headers: [
