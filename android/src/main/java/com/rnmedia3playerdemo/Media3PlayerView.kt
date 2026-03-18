@@ -92,6 +92,25 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
     }
 
     /**
+     * Maps a media type string from JavaScript to one of Media3's content type constants.
+     *
+     * This function interprets the "type" property provided from React Native JS props ("dash", "hls", "mp4")
+     * and translates it to the corresponding Media3 content type constant used by ExoPlayer.
+     * Returns null if the string is null, empty, or does not match a known type.
+     *
+     * @param type Optional string type from JS ("dash", "hls", "mp4")
+     * @return Media3 content type constant (C.CONTENT_TYPE_DASH, etc.), or null if unrecognized
+     */
+    private fun mapTypeFromJS(type: String?): Int? {
+        return when (type?.lowercase()) {
+            "dash" -> C.CONTENT_TYPE_DASH
+            "hls" -> C.CONTENT_TYPE_HLS
+            "mp4" -> C.CONTENT_TYPE_OTHER
+            else -> null
+        }
+    }
+
+    /**
      * Infers the content type of a given URI for media playback.
      *
      * This method first uses Media3's built-in Util.inferContentType to try
@@ -136,21 +155,30 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
      */
     private fun buildMediaSource(
         uri: Uri,
-        mediaItem: MediaItem
+        mediaItem: MediaItem,
+        type: String?
     ): MediaSource {
 
         // Create a DefaultHttpDataSourceFactory for the MediaSource.
         // This is used to fetch the media content from the network.
         val dataSourceFactory = DefaultHttpDataSource.Factory()
 
-        // Infer the content type of the media source.
-        val type = inferContentTypeSafe(uri)
-        // Log the detected content type for debugging purposes.
-        Log.d("Media3Player", "Detected type: $type for url: $uri")
+        // Check if a type was explicitly passed from JS (e.g., "hls", "dash", "mp4") and map to Media3 type constant.
+        val overrideType = mapTypeFromJS(type)
+        // Otherwise, infer the content type from the URI (file extension or stream manifest).
+        val detectedType = inferContentTypeSafe(uri)
+        // Use the JS override type if available, else fall back to detected type.
+        val finalType = overrideType ?: detectedType
+
+        // Log the content type detection process for debugging purposes.
+        Log.d(
+            "Media3Player",
+            "Type → override: $overrideType detected: $detectedType final: $finalType url: $uri"
+        )
 
         // Determine content type and return the appropriate MediaSource.
         // This is used to create the appropriate MediaSource for the ExoPlayer.
-        return when (type) {
+        return when (finalType) {
             // DASH (MPD) stream
             C.CONTENT_TYPE_DASH -> {
                 DashMediaSource.Factory(dataSourceFactory)
@@ -190,6 +218,7 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
      */
     fun setSource(
         uriString: String?,
+        type: String?,
         licenseUrl: String?,
         headers: Map<String, String>?
     ) {
@@ -229,7 +258,7 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
 
         // Build the appropriate MediaSource (handles progressive, DASH/HLS/SmoothStreaming)
         // and assign it to ExoPlayer. Prepare ExoPlayer for playback.
-        val mediaSource = buildMediaSource(uri, mediaItem)
+        val mediaSource = buildMediaSource(uri, mediaItem, type)
         exoPlayer?.setMediaSource(mediaSource)
         exoPlayer?.prepare()
     }

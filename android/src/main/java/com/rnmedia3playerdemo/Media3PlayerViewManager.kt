@@ -52,6 +52,7 @@ class Media3PlayerViewManager :
     @ReactProp(name = "source")
     override fun setSource(view: Media3PlayerView, source: ReadableMap?) {
         val uri = source?.getString("uri")
+        val type = source?.getString("type")
         var licenseUrl: String? = null
         var headers: Map<String, String>? = null
         val drmMap = source?.getMap("drm")
@@ -73,7 +74,7 @@ class Media3PlayerViewManager :
             }
         }
         if (!uri.isNullOrEmpty()) {
-            view.setSource(uri, licenseUrl, headers)
+            view.setSource(uri, type, licenseUrl, headers)
         }
     }
 

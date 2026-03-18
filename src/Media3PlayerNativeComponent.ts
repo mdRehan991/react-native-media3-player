@@ -19,6 +19,7 @@ type DRMConfig = Readonly<{
 // - drm: (Optional) DRM configuration for protected content.
 type Source = Readonly<{
   uri: string;
+  type?: 'dash' | 'hls' | 'mp4';
   drm?: DRMConfig;
 }>;
 // Event type emitted when the player is ready
