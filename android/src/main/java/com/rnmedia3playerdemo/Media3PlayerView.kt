@@ -15,6 +15,14 @@ import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
 import androidx.media3.common.C
+import androidx.media3.common.util.Util
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.dash.DashMediaSource
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.smoothstreaming.SsMediaSource
+import android.util.Log
 
 /**
  * Custom view that wraps ExoPlayer and PlayerView, integrating with React Native.
@@ -84,6 +92,95 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
     }
 
     /**
+     * Infers the content type of a given URI for media playback.
+     *
+     * This method first uses Media3's built-in Util.inferContentType to try
+     * to detect the type (DASH, HLS, SmoothStreaming, or Other) based on file extension or URI.
+     * If this detection fails (returns CONTENT_TYPE_OTHER), it falls back to checking
+     * for well-known streaming manifest extensions (.mpd for DASH, .m3u8 for HLS)
+     * in the URI string. This fallback is important for cases where extensions are
+     * not present (e.g. signed URLs or tokens).
+     *
+     * @param uri The Uri of the media source.
+     * @return The detected content type as one of C.CONTENT_TYPE_* constants.
+     */
+    private fun inferContentTypeSafe(uri: Uri): Int {
+
+        // Use Media3's built-in Util.inferContentType to try to detect the type.
+        val detectedType = Util.inferContentType(uri)
+
+        // If Media3 was able to determine the type, return it early.
+        if (detectedType != C.CONTENT_TYPE_OTHER) {
+            return detectedType
+        }
+
+        // Convert the Uri to a string
+        val url = uri.toString()
+
+        // Fallback: manually check for known manifest extensions in the URL
+        // This helps handle sources where the content type can't be inferred automatically.
+        return when {
+            url.contains(".mpd", ignoreCase = true) -> C.CONTENT_TYPE_DASH
+            url.contains(".m3u8", ignoreCase = true) -> C.CONTENT_TYPE_HLS
+            else -> C.CONTENT_TYPE_OTHER
+        }
+    }
+
+    /**
+     * Builds a MediaSource instance required by ExoPlayer based on the content type of the given URI.
+     * Handles DASH, HLS, SmoothStreaming, and generic progressive streams.
+     *
+     * @param uri The Uri of the media to play.
+     * @param mediaItem The MediaItem (with possible DRM/config) for playback.
+     * @return The constructed MediaSource for the ExoPlayer.
+     */
+    private fun buildMediaSource(
+        uri: Uri,
+        mediaItem: MediaItem
+    ): MediaSource {
+
+        // Create a DefaultHttpDataSourceFactory for the MediaSource.
+        // This is used to fetch the media content from the network.
+        val dataSourceFactory = DefaultHttpDataSource.Factory()
+
+        // Infer the content type of the media source.
+        val type = inferContentTypeSafe(uri)
+        // Log the detected content type for debugging purposes.
+        Log.d("Media3Player", "Detected type: $type for url: $uri")
+
+        // Determine content type and return the appropriate MediaSource.
+        // This is used to create the appropriate MediaSource for the ExoPlayer.
+        return when (type) {
+            // DASH (MPD) stream
+            C.CONTENT_TYPE_DASH -> {
+                DashMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(mediaItem)
+            }
+            // HLS (M3U8) stream
+            C.CONTENT_TYPE_HLS -> {
+                HlsMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(mediaItem)
+            }
+            // SmoothStreaming (ISM) stream
+            C.CONTENT_TYPE_SS -> {
+                SsMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(mediaItem)
+            }
+            // Progressive HTTP file (MP4, MP3, etc.)
+            C.CONTENT_TYPE_OTHER -> {
+                ProgressiveMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(mediaItem)
+            }
+            // Fallback to progressive for unknown types
+            else -> {
+                ProgressiveMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(mediaItem)
+            }
+        }
+    }
+
+
+    /**
      * Sets the video source (with optional DRM support) and prepares the player.
      * Called from the ViewManager when the JS "source" prop changes.
      *
@@ -98,13 +195,19 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
     ) {
         // Return early if no valid URI is provided
         if (uriString.isNullOrEmpty()) return
+        
+        // Store the URI string for reference
         sourceUri = uriString
 
         // Ensure the ExoPlayer instance is initialized before use
         initializePlayer()
 
+        // Parse the URI string into a Uri object
         val uri = Uri.parse(uriString)
-        // Build the MediaItem, adding DRM configuration if a license URL is given
+
+        // Build the MediaItem, adding DRM configuration if a license URL is given.
+        // This includes setting the license URL and multi-session support for DRM streams.
+        // If no license URL is provided, a simple MediaItem is created from the URI.
         val mediaItem =
             if (!licenseUrl.isNullOrEmpty()) {
                 val drmBuilder = MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
@@ -123,8 +226,11 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
                 // No DRM: simple MediaItem from URI
                 MediaItem.fromUri(uri)
             }
-        // Set the media item on the player and prepare for playback
-        exoPlayer?.setMediaItem(mediaItem)
+
+        // Build the appropriate MediaSource (handles progressive, DASH/HLS/SmoothStreaming)
+        // and assign it to ExoPlayer. Prepare ExoPlayer for playback.
+        val mediaSource = buildMediaSource(uri, mediaItem)
+        exoPlayer?.setMediaSource(mediaSource)
         exoPlayer?.prepare()
     }
 
