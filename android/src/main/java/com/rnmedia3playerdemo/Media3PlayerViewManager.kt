@@ -57,6 +57,10 @@ class Media3PlayerViewManager :
         var headers: Map<String, String>? = null
         val drmMap = source?.getMap("drm")
 
+        // Extract the IMA Ads configuration from the source map.
+        val adsMap = source?.getMap("ads")
+        val adTagUrl = adsMap?.getString("adTagUrl")
+
         if (drmMap != null) {
             licenseUrl = drmMap.getString("licenseUrl")
             val headersArray = drmMap.getArray("headers")
@@ -74,7 +78,7 @@ class Media3PlayerViewManager :
             }
         }
         if (!uri.isNullOrEmpty()) {
-            view.setSource(uri, type, licenseUrl, headers)
+            view.setSource(uri, type, licenseUrl, headers, adTagUrl)
         }
     }
 

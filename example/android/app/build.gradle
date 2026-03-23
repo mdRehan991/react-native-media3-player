@@ -79,7 +79,7 @@ android {
 
     namespace "com.example"
     defaultConfig {
-        applicationId "com.example"
+        applicationId "com.rnmedia3playerdemo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

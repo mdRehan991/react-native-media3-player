@@ -65,4 +65,10 @@ dependencies {
 
     // Android core utilities and extensions (KTX)
     implementation "androidx.core:core-ktx:1.13.1"
+
+    // IMA Ads support for Media3
+    implementation "androidx.media3:media3-exoplayer-ima:$media3Version"
+
+    // Google IMA SDK
+    implementation "com.google.ads.interactivemedia.v3:interactivemedia:3.33.0"
 }
