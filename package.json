@@ -1,6 +1,6 @@
 {
   "name": "react-native-media3-player",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "description": "React Native Media3 Player component for Android (ExoPlayer 3 integration).",
   "main": "index.js",
   "react-native": "index.js",
