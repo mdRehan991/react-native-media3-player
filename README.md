@@ -1,6 +1,6 @@
 # 📽️ Media3Player
 
-> A lightweight, high-performance React Native video player powered by Android Media3 (ExoPlayer). Fully customizable with support for autoplay, mute, event handling, and automatic stream type detection (DASH, HLS, MP4). This is an **Android** only package.
+> A lightweight, high-performance React Native video player powered by Android Media3 (ExoPlayer). Fully customizable with support for autoplay, mute, event handling, automatic stream type detection (DASH, HLS, MP4), and client-side ad insertion (CSAI) via Google IMA. This is an **Android** only package.
 
 ---
 
@@ -11,6 +11,7 @@
 - [Props](#props)
 - [Stream Type Detection](#stream-type-detection)
 - [DRM Support (Widevine)](#drm-support-widevine)
+- [IMA Ads Support (CSAI)](#ima-ads-support-csai)
 - [Events](#events)
 - [TypeScript Support](#typescript-support)
 - [Examples](#examples)
@@ -109,13 +110,43 @@ export default function App() {
 }
 ```
 
+**With IMA Ads (Client-Side Ad Insertion):**
+
+```jsx
+import React from 'react';
+import {View} from 'react-native';
+import Media3Player from 'react-native-media3-player';
+
+export default function App() {
+  return (
+    <View style={{flex: 1}}>
+      <Media3Player
+        style={{width: '100%', height: 250}}
+        source={{
+          uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          ads: {
+            adTagUrl:
+              'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpreonly&ciu_szs=300x250%2C728x90&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&correlator=',
+          },
+        }}
+        autoplay={true}
+        play={true}
+        onReady={() => console.log('Player is ready')}
+        onEnd={() => console.log('Video ended')}
+        onError={error => console.log('Player error:', error.message)}
+      />
+    </View>
+  );
+}
+```
+
 ---
 
 ## Props
 
 | Prop       | Type                         | Default                          | Description                                                              |
 | ---------- | ---------------------------- | -------------------------------- | ------------------------------------------------------------------------ |
-| `source`   | `Source`                     | required                         | Video source object. Must include a valid `uri`. Supports optional `drm` config. |
+| `source`   | `Source`                     | required                         | Video source object. Must include a valid `uri`. Supports optional `drm` and `ads` config. |
 | `autoplay` | `boolean`                    | `false`                          | Automatically start playback when the video is ready.                    |
 | `play`     | `boolean`                    | `false`                          | Controls whether the player is playing. Overrides autoplay.              |
 | `mute`     | `boolean`                    | `false`                          | Mutes or unmutes the video.                                              |
@@ -128,6 +159,7 @@ export default function App() {
 | `uri`    | `string`                     | Yes      | The URI of the media to play (MP4, DASH, HLS, etc.).                                                         |
 | `type`   | `'dash' \| 'hls' \| 'mp4'`  | No       | Explicitly set the stream type. Defaults to `'mp4'`. If omitted, the player auto-detects the type from the URI. |
 | `drm`    | `DRMConfig`                  | No       | DRM configuration for protected content.                                                                     |
+| `ads`    | `AdsConfig`                  | No       | IMA ads configuration for client-side ad insertion.                                                           |
 
 ### `DRMConfig` Object
 
@@ -135,6 +167,12 @@ export default function App() {
 | ------------ | --------------------------------- | -------- | ----------------------------------------------------- |
 | `licenseUrl` | `string`                          | Yes      | The Widevine license server URL.                      |
 | `headers`    | `Array<{ key: string, value: string }>` | No       | Custom headers to include in the DRM license request. |
+
+### `AdsConfig` Object
+
+| Property   | Type     | Required | Description                                                       |
+| ---------- | -------- | -------- | ----------------------------------------------------------------- |
+| `adTagUrl` | `string` | Yes      | The VAST/VMAP ad tag URL for client-side ad insertion via IMA SDK. |
 
 ---
 
@@ -233,6 +271,58 @@ Some license servers require authentication tokens or custom headers. Pass them 
 
 ---
 
+## IMA Ads Support (CSAI)
+
+This library supports **Client-Side Ad Insertion (CSAI)** using the [Google IMA SDK](https://developers.google.com/interactive-media-ads) integrated via Media3's IMA extension. To enable ads, pass an `ads` object inside the `source` prop with a VAST or VMAP ad tag URL.
+
+### Basic Ad Playback
+
+```jsx
+<Media3Player
+  source={{
+    uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    ads: {
+      adTagUrl:
+        'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpreonly&ciu_szs=300x250%2C728x90&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&correlator=',
+    },
+  }}
+  autoplay
+  play
+/>
+```
+
+### Ads with DRM Content
+
+You can combine ads with DRM-protected streams:
+
+```jsx
+<Media3Player
+  source={{
+    uri: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
+    type: 'dash',
+    drm: {
+      licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth',
+    },
+    ads: {
+      adTagUrl: 'https://your-ad-server.com/vmap-tag',
+    },
+  }}
+  autoplay
+  play
+  onError={e => console.error('Error:', e.message)}
+/>
+```
+
+### Notes
+
+- Ads are supported on **Android only**.
+- The `adTagUrl` should point to a valid VAST or VMAP XML endpoint.
+- Both pre-roll and mid-roll ad configurations are supported via VMAP.
+- The IMA ads loader is automatically initialized and released as needed when the ad tag URL changes.
+- Ads play inline within the same `PlayerView` used for content playback.
+
+---
+
 ## Events
 
 | Event     | Callback Signature                     | Description                                                                            |
@@ -282,6 +372,23 @@ const drmProps: Media3PlayerProps = {
   play: true,
   style: {width: '100%', height: 250},
   onError: err => console.log('DRM Error:', err.message),
+};
+```
+
+**With IMA Ads:**
+
+```ts
+const adsProps: Media3PlayerProps = {
+  source: {
+    uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    ads: {
+      adTagUrl: 'https://pubads.g.doubleclick.net/gampad/ads?...',
+    },
+  },
+  autoplay: true,
+  play: true,
+  style: {width: '100%', height: 250},
+  onError: err => console.log('Ad Error:', err.message),
 };
 ```
 
@@ -368,6 +475,41 @@ const drmProps: Media3PlayerProps = {
   autoplay
   play
   onError={err => console.error('DRM Error:', err.message)}
+/>
+```
+
+**With IMA Ads (VMAP):**
+
+```jsx
+<Media3Player
+  source={{
+    uri: 'https://example.com/video.mp4',
+    ads: {
+      adTagUrl: 'https://pubads.g.doubleclick.net/gampad/ads?...',
+    },
+  }}
+  autoplay
+  play
+/>
+```
+
+**Ads with DRM Stream:**
+
+```jsx
+<Media3Player
+  source={{
+    uri: 'https://example.com/protected/manifest.mpd',
+    type: 'dash',
+    drm: {
+      licenseUrl: 'https://license.example.com/widevine',
+    },
+    ads: {
+      adTagUrl: 'https://pubads.g.doubleclick.net/gampad/ads?...',
+    },
+  }}
+  autoplay
+  play
+  onError={err => console.error('Error:', err.message)}
 />
 ```
 
