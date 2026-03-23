@@ -1,7 +1,10 @@
 // Import the base ViewProps type from React Native to extend the native component's props
 import type {ViewProps} from 'react-native';
 // Import the DirectEventHandler type used for native-to-JS event callback typings
-import type {DirectEventHandler, WithDefault} from 'react-native/Libraries/Types/CodegenTypes';
+import type {
+  DirectEventHandler,
+  WithDefault,
+} from 'react-native/Libraries/Types/CodegenTypes';
 // Import codegenNativeComponent to register the native UI component for use in React Native
 import codegenNativeComponent from 'react-native/Libraries/Utilities/codegenNativeComponent';
 
@@ -14,13 +17,20 @@ type DRMConfig = Readonly<{
   licenseUrl: string;
   headers?: ReadonlyArray<HeaderEntry>;
 }>;
+
+type AdsConfig = Readonly<{
+  adTagUrl: string;
+}>;
+
 // Source defines the media source for the player component.
 // - uri: The URI of the media to be played (required).
 // - drm: (Optional) DRM configuration for protected content.
+// - ads: (Optional) IMA Ads configuration for ad playback.
 type Source = Readonly<{
   uri: string;
   type?: WithDefault<'dash' | 'hls' | 'mp4', 'mp4'>;
   drm?: DRMConfig;
+  ads?: AdsConfig;
 }>;
 // Event type emitted when the player is ready
 type OnReadyEvent = Readonly<{}>;

@@ -22,6 +22,9 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.smoothstreaming.SsMediaSource
+import androidx.media3.exoplayer.ima.ImaAdsLoader
+import androidx.media3.exoplayer.source.ads.AdsMediaSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 
 /**
  * Custom view that wraps ExoPlayer and PlayerView, integrating with React Native.
@@ -39,6 +42,10 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
     private var play: Boolean = false
     // Mute state controlled by the JS prop
     private var mute: Boolean = false
+    // IMA Ads loader
+    private var adsLoader: ImaAdsLoader? = null
+    // Currently loaded ad tag URL
+    private var currentAdTagUrl: String? = null
 
     /**
      * Constructor: initialize the PlayerView and attach it to the layout.
@@ -53,6 +60,21 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
     }
 
     /**
+     * Initializes the IMA Ads loader and sets it to the player.
+     * @param adTagUrl The URL of the ad tag to load.
+     */
+    private fun initializeAdsLoader(adTagUrl: String) {
+        if (adsLoader == null || currentAdTagUrl != adTagUrl) {
+            adsLoader?.release()
+
+            adsLoader = ImaAdsLoader.Builder(context).build()
+            currentAdTagUrl = adTagUrl
+
+            adsLoader?.setPlayer(exoPlayer)
+        }
+    }
+
+    /**
      * Initializes ExoPlayer and attaches a listener for player events.
      * Ensures only one instance exists.
      */
@@ -60,6 +82,9 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
         if (exoPlayer == null) {
             exoPlayer = ExoPlayer.Builder(context).build()
             playerView.player = exoPlayer
+
+            // Set the IMA Ads loader to the player
+            adsLoader?.setPlayer(exoPlayer)
 
             // Listen for playback state changes and errors
             exoPlayer?.addListener(object : Player.Listener {
@@ -219,13 +244,23 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
         uriString: String?,
         type: String?,
         licenseUrl: String?,
-        headers: Map<String, String>?
+        headers: Map<String, String>?,
+        adTagUrl: String?
     ) {
         // Return early if no valid URI is provided
         if (uriString.isNullOrEmpty()) return
         
         // Store the URI string for reference
         sourceUri = uriString
+
+        
+        // Release and reset the adsLoader if the ad tag URL has changed -
+        // to prevent playing old ads or memory leaks.
+        if (currentAdTagUrl != adTagUrl) {
+            adsLoader?.setPlayer(null)
+            adsLoader?.release()
+            adsLoader = null
+        }
 
         // Ensure the ExoPlayer instance is initialized before use
         initializePlayer()
@@ -255,10 +290,33 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
                 MediaItem.fromUri(uri)
             }
 
-        // Build the appropriate MediaSource (handles progressive, DASH/HLS/SmoothStreaming)
-        // and assign it to ExoPlayer. Prepare ExoPlayer for playback.
-        val mediaSource = buildMediaSource(uri, mediaItem, type)
-        exoPlayer?.setMediaSource(mediaSource)
+        // If an ad tag URL is provided, configure the player for ad playback using IMA:
+        // - Initialize the AdsLoader (only if not already done for the current ad tag)
+        // - Build a MediaItem that includes the ads configuration
+        // - Create a DefaultMediaSourceFactory with ads and ad view providers
+        // - Set the media source with ads on the player
+        if (!adTagUrl.isNullOrEmpty()) {
+            initializeAdsLoader(adTagUrl)
+
+            val mediaItemWithAds = mediaItem.buildUpon()
+                .setAdsConfiguration(
+                    MediaItem.AdsConfiguration.Builder(Uri.parse(adTagUrl)).build()
+                )
+                .build()
+
+            val mediaSourceFactory = DefaultMediaSourceFactory(DefaultHttpDataSource.Factory())
+                .setAdsLoaderProvider { adsLoader }
+                .setAdViewProvider(playerView)
+
+            exoPlayer?.setMediaSource(
+                mediaSourceFactory.createMediaSource(mediaItemWithAds)
+            )
+        } else {
+            // If no ad tag URL, simply build and set the normal content media source
+            val mediaSource = buildMediaSource(uri, mediaItem, type)
+            exoPlayer?.setMediaSource(mediaSource)
+        }
+        // Prepare the player for playback (loads media and notifies listeners)
         exoPlayer?.prepare()
     }
 
@@ -300,8 +358,23 @@ class Media3PlayerView(context: Context) : FrameLayout(context) {
      * This should be called when the view is destroyed.
      */
     fun releasePlayer() {
+        // Release the IMA Ads loader
+        adsLoader?.setPlayer(null)
+        adsLoader?.release()
+        adsLoader = null
+
+        // Release the ExoPlayer
         exoPlayer?.release()
         exoPlayer = null
+    }
+
+    /**
+     * Called when the view is detached from the window.
+     * Releases the player and cleans up resources.
+     */
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        releasePlayer()
     }
 
     /**

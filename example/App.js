@@ -10,9 +10,13 @@ const App = () => {
 
   // Sample URLs for testing
 
-  // const source = {
-  //   uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-  // };
+  const source = {
+    uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    ads: {
+      adTagUrl:
+        'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpreonly&ciu_szs=300x250%2C728x90&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&correlator=',
+    },
+  };
 
   // const source = {
   //   uri: 'https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd',
@@ -21,19 +25,23 @@ const App = () => {
   //   },
   // };
 
-  const source = {
-    uri: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
-    type: 'dash', // Stream type: 'dash', 'hls', 'mp4'
-    drm: {
-      licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth',
-    },
-  };
+  // const source = {
+  //   uri: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
+  //   type: 'dash', // Stream type: 'dash', 'hls', 'mp4'
+  //   drm: {
+  //     licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth',
+  //   },
+  //   ads: {
+  //     adTagUrl:
+  //       'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpreonly&ciu_szs=300x250%2C728x90&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&correlator=',
+  //   },
+  // };
 
   return (
     <View style={styles.container}>
       <Media3Player
         mute={isMuted}
-        autoplay={false}
+        autoplay={true}
         play={isPlaying}
         source={source}
         style={styles.player}
